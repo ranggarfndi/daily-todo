@@ -360,15 +360,16 @@
     <div class="app-container">
         <header>
             <div class="header-top">
-                <h1>Daily <span>ToDO</span></h1>
+                <h1>Daily<span>Done</span></h1>
+                <span class="status-dot" title="Live Sync Active"></span>
             </div>
-            <div class="date-display" id="current-date">Kamis, 15 Juni 2023</div>
+            <div class="date-display" id="current-date">...</div>
         </header>
 
         <section class="stats-card">
             <div class="stats-info">
                 <h2>Ringkasan Progres</h2>
-                <p id="stats-counter">Lakukan task pertama hari ini!</p>
+                <p id="stats-counter">Memuat data dari cloud...</p>
             </div>
             <div class="progress-circle" id="progress-circle">0%</div>
         </section>
@@ -379,11 +380,31 @@
         </div>
 
         <ul id="task-list"></ul>
-        <div id="empty-state" class="empty-state">🎯 Mulai hari ini dengan menambahkan target!</div>
+        <div id="empty-state" class="empty-state">🎯 Belum ada target. Tambahkan sekarang!</div>
     </div>
 
-    <script>
-        // --- DOM Elements ---
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+        import { getDatabase, ref, push, remove, update, onValue } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
+
+        // =========================================================
+        // ⚠️ PENTING: GANTI KODE DI BAWAH INI DENGAN MILIKMU SENDIRI
+        // =========================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyCwCqo73f9R6Bxl23EbiXIBhGlXx1r4RhE",
+            authDomain: "my-daily-todo-40565.firebaseapp.com",
+            projectId: "my-daily-todo-40565",
+            storageBucket: "my-daily-todo-40565.firebasestorage.app",
+            messagingSenderId: "140272983252",
+            appId: "1:140272983252:web:d1b42ed05e23a70341ef41"
+        };
+        // =========================================================
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // DOM Elements
         const taskInput = document.getElementById('task-input');
         const addBtn = document.getElementById('add-btn');
         const taskList = document.getElementById('task-list');
@@ -392,107 +413,80 @@
         const statsCounter = document.getElementById('stats-counter');
         const progressCircle = document.getElementById('progress-circle');
 
-        // --- State Management ---
-        let tasks = [];
-        
-        // --- Date Setup ---
+        // Setup Tanggal (Untuk Daily Reset)
+        // Kita jadikan tanggal hari ini sebagai "folder" di database.
+        // Format: DD-MM-YYYY (Contoh: 15-06-2023)
         const today = new Date();
-        const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        // Use ID for full display, and a simplified version for the tracking key
-        const fullDateString = today.toLocaleDateString('id-ID', dateOptions);
-        const dateTrackingKey = `todo_date_${today.toLocaleDateString('id-ID')}`; 
+        const dateStringForDisplay = today.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        const dateKeyForDatabase = `${today.getDate()}-${today.getMonth() + 1}-${today.getFullYear()}`;
+        
+        currentDateDisplay.textContent = dateStringForDisplay;
 
-        currentDateDisplay.textContent = fullDateString;
+        // Referensi database spesifik untuk hari ini
+        const todayTasksRef = ref(db, 'tasks/' + dateKeyForDatabase);
 
-        // --- Initialize App ---
-        function init() {
-            // Daily Reset Logic
-            // We check for *any* previous data to decide if we need to reset
-            const lastActiveDateKey = localStorage.getItem('todo_last_active_key');
+        let localTasks = [];
+
+        // 1. REAL-TIME LISTENER (Membaca data dari Cloud secara otomatis)
+        onValue(todayTasksRef, (snapshot) => {
+            localTasks = [];
+            const data = snapshot.val();
             
-            if (lastActiveDateKey && lastActiveDateKey !== dateTrackingKey) {
-                // It's a new day! Clear the old day's data
-                tasks = [];
-                // Update the last active key to today
-                localStorage.setItem('todo_last_active_key', dateTrackingKey);
-                saveData();
-            } else {
-                // Same day, or first-time use. Load existing tasks for today.
-                const savedTasks = localStorage.getItem('todo_tasks');
-                if (savedTasks) {
-                    tasks = JSON.parse(savedTasks);
+            if (data) {
+                // Konversi object Firebase ke dalam array
+                for (let id in data) {
+                    localTasks.push({ id: id, ...data[id] });
                 }
-                // Also set the key for the first time
-                localStorage.setItem('todo_last_active_key', dateTrackingKey);
+                // Urutkan agar yang baru di atas
+                localTasks.reverse();
             }
+            
             renderTasks();
-        }
+        });
 
-        // --- Save to LocalStorage ---
-        function saveData() {
-            localStorage.setItem('todo_tasks', JSON.stringify(tasks));
-        }
-
-        // --- Core Functions ---
-
-        // 1. Add Task
+        // 2. Tambah Task (Menulis ke Cloud)
         function addTask() {
             const text = taskInput.value.trim();
             if (text !== '') {
-                const newTask = {
-                    id: `task_${Date.now()}`,
+                push(todayTasksRef, {
                     text: text,
-                    completed: false
-                };
-                // Prepend new tasks to show them at the top
-                tasks.unshift(newTask);
-                saveData();
+                    completed: false,
+                    timestamp: Date.now()
+                });
                 taskInput.value = '';
                 taskInput.focus();
-                renderTasks();
-            } else {
-                // Focus input if empty and added
-                taskInput.focus();
             }
         }
 
-        // 2. Delete Task
+        // 3. Hapus Task
         window.deleteTask = function(id) {
-            tasks = tasks.filter(task => task.id !== id);
-            saveData();
-            renderTasks();
+            remove(ref(db, `tasks/${dateKeyForDatabase}/${id}`));
         }
 
-        // 3. Edit Task
-        window.editTask = function(id) {
-            const task = tasks.find(t => t.id === id);
-            if (task) {
-                const newText = prompt("Edit task:", task.text);
-                if (newText !== null && newText.trim() !== '') {
-                    task.text = newText.trim();
-                    saveData();
-                    renderTasks();
-                }
+        // 4. Edit Task
+        window.editTask = function(id, oldText) {
+            const newText = prompt("Edit task:", oldText);
+            if (newText !== null && newText.trim() !== '') {
+                update(ref(db, `tasks/${dateKeyForDatabase}/${id}`), {
+                    text: newText.trim()
+                });
             }
         }
 
-        // 4. Toggle Status (Complete/Incomplete)
-        window.toggleStatus = function(id) {
-            const task = tasks.find(t => t.id === id);
-            if (task) {
-                task.completed = !task.completed;
-                saveData();
-                renderTasks(); // Re-render to update the visual state
-            }
+        // 5. Toggle Status
+        window.toggleStatus = function(id, currentStatus) {
+            update(ref(db, `tasks/${dateKeyForDatabase}/${id}`), {
+                completed: !currentStatus
+            });
         }
 
-        // --- Update Progress Stats ---
+        // --- Render UI --- (Sama seperti sebelumnya)
         function updateStats() {
-            const total = tasks.length;
-            const completed = tasks.filter(task => task.completed).length;
+            const total = localTasks.length;
+            const completed = localTasks.filter(task => task.completed).length;
 
             if (total === 0) {
-                statsCounter.textContent = "Tambahkan target untuk mulai!";
+                statsCounter.textContent = "Belum ada target hari ini.";
                 progressCircle.textContent = "0%";
                 progressCircle.style.background = `conic-gradient(#e2e8f0 0%, #e2e8f0 100%)`;
                 return;
@@ -501,41 +495,38 @@
             const percentage = Math.round((completed / total) * 100);
             
             if (total === completed) {
-                statsCounter.textContent = "Selamat! Semua target hari ini tuntas. 🎉";
+                statsCounter.textContent = "Semua target hari ini tuntas! 🎉";
             } else {
-                statsCounter.textContent = `${completed} dari ${total} task sudah selesai`;
+                statsCounter.textContent = `${completed} dari ${total} task selesai`;
             }
 
             progressCircle.textContent = `${percentage}%`;
-            // Dynamic conic gradient to fill the circle visually
             const fillingPercentage = (percentage === 0) ? 0.01 : percentage;
-            progressCircle.style.background = `
-                radial-gradient(closest-side, white 79%, transparent 80% 100%),
-                conic-gradient(var(--success) ${percentage}%, #e2e8f0 0%)`;
+            progressCircle.style.background = `radial-gradient(closest-side, white 79%, transparent 80% 100%), conic-gradient(var(--success) ${percentage}%, #e2e8f0 0%)`;
         }
 
-        // --- Render Tasks to DOM ---
         function renderTasks() {
             taskList.innerHTML = '';
             updateStats();
             
-            if (tasks.length === 0) {
+            if (localTasks.length === 0) {
                 emptyState.style.display = 'block';
             } else {
                 emptyState.style.display = 'none';
                 
-                tasks.forEach(task => {
+                localTasks.forEach(task => {
                     const li = document.createElement('li');
                     if (task.completed) li.classList.add('completed');
                     
+                    // Kita oper parameter id dan text/status saat ini ke fungsi window
                     li.innerHTML = `
                         <label class="checkbox-container">
-                            <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleStatus('${task.id}')">
+                            <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleStatus('${task.id}', ${task.completed})">
                             <span class="checkmark"></span>
                         </label>
                         <span class="task-text">${task.text}</span>
                         <div class="actions">
-                            <button class="btn-action btn-edit" onclick="editTask('${task.id}')" title="Edit">✎</button>
+                            <button class="btn-action btn-edit" onclick="editTask('${task.id}', '${task.text.replace(/'/g, "\\'")}')" title="Edit">✎</button>
                             <button class="btn-action btn-delete" onclick="deleteTask('${task.id}')" title="Hapus">✖</button>
                         </div>
                     `;
@@ -544,16 +535,12 @@
             }
         }
 
-        // --- Event Listeners ---
+        // Event Listeners
         addBtn.addEventListener('click', addTask);
         taskInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                addTask();
-            }
+            if (e.key === 'Enter') addTask();
         });
 
-        // --- Run on Load ---
-        init();
     </script>
 </body>
 </html>
