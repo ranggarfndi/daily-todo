@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>📚 History | Daily Todo R & M</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="app-container">
+        <nav class="main-nav">
+            <a href="index.html" class="nav-main-btn">📝 Task</a>
+            <a href="history.html" class="nav-main-btn active">📚 History</a>
+            <a href="ranking.html" class="nav-main-btn">🏆 Ranking</a>
+        </nav>
+
+        <header>
+            <h1>Riwayat <span>Bulanan</span></h1>
+            <div class="date-picker-area">
+                <div class="filter-item">
+                    <label>PILIH BULAN</label>
+                    <input type="month" id="history-month-input" onchange="window.loadHistoryData()">
+                </div>
+                <div class="filter-item">
+                    <label>FILTER TANGGAL</label>
+                    <input type="date" id="history-date-filter" onchange="window.loadHistoryData()">
+                </div>
+                <div class="filter-item">
+                    <button class="btn-reset" onclick="window.resetFilters()" title="Kembali ke default">🔄 Reset Filter</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="history-summary">
+            <div class="summary-card rangga-card">
+                <span class="emoji">🧑🏻</span>
+                <h3>Rangga</h3>
+                <p>Total Selesai: <strong id="hist-total-rangga">0</strong></p>
+            </div>
+            <div class="summary-card malika-card">
+                <span class="emoji">👩🏻</span>
+                <h3>Malika</h3>
+                <p>Total Selesai: <strong id="hist-total-malika">0</strong></p>
+            </div>
+        </div>
+
+        <div id="history-list-container">
+            <div class="empty-state">Memuat data...</div>
+        </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>

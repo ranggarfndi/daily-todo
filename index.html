@@ -3,346 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>🎯 Target Hari Ini | Sync Mode</title>
-    <style>
-        /* --- CSS Reset & Variables --- */
-        :root {
-            --primary: #7c3aed; 
-            --primary-light: #ddd6fe;
-            --primary-dark: #6d28d9;
-            --success: #10b981; 
-            --warning: #f59e0b; 
-            --danger: #ef4444; 
-            --bg-page: #f9fafb;
-            --bg-card: #ffffff;
-            --text-main: #111827;
-            --text-muted: #6b7280;
-            --border-color: #e5e7eb;
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-
-        body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background-color: var(--bg-page);
-            color: var(--text-main);
-            display: flex;
-            justify-content: center;
-            min-height: 100vh;
-            padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom);
-        }
-
-        .app-container {
-            background-color: var(--bg-card);
-            width: 100%;
-            max-width: 500px;
-            margin-top: 24px;
-            margin-bottom: 24px;
-            padding: 32px;
-            border-radius: 20px;
-            box-shadow: var(--shadow-lg);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        @media (max-width: 600px) {
-            .app-container { margin-top: 0; margin-bottom: 0; border-radius: 0; box-shadow: none; padding: 24px; }
-        }
-
-        header { text-align: center; margin-bottom: 24px; }
-        .header-top { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 8px; }
-        h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.025em; }
-        h1 span { color: var(--primary); }
-        .status-dot { width: 10px; height: 10px; background-color: var(--success); border-radius: 50%; display: inline-block; box-shadow: 0 0 8px var(--success); }
-        .date-display { color: var(--text-muted); font-size: 1rem; font-weight: 500; }
-
-        /* --- Tab System --- */
-        .user-tabs {
-            display: flex;
-            background-color: #f1f5f9;
-            padding: 4px;
-            border-radius: 12px;
-            margin-bottom: 24px;
-        }
-
-        .tab-btn {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            background: transparent;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .tab-btn.active {
-            background-color: var(--bg-card);
-            color: var(--primary);
-            box-shadow: var(--shadow-sm);
-        }
-
-        /* --- Stats Card --- */
-        .stats-card { background-color: #faf5ff; border: 1px solid var(--primary-light); padding: 16px; border-radius: 12px; margin-bottom: 24px; text-align: center; display: flex; justify-content: space-between; align-items: center; }
-        .stats-info h2 { font-size: 1.25rem; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
-        .stats-info p { font-size: 0.9rem; color: var(--primary-dark); }
-        .progress-circle { width: 60px; height: 60px; border-radius: 50%; background: radial-gradient(closest-side, white 79%, transparent 80% 100%), conic-gradient(var(--success) 0%, #e2e8f0 0%); display: flex; justify-content: center; align-items: center; font-weight: 700; color: var(--success); font-size: 1.1rem; transition: background 0.3s ease; }
-
-        /* --- Input Section --- */
-        .input-group { display: flex; gap: 12px; margin-bottom: 24px; }
-        @media (max-width: 480px) { .input-group { flex-direction: column; gap: 8px; } }
-        input[type="text"] { flex-grow: 1; padding: 14px 18px; border: 2px solid var(--border-color); border-radius: 12px; font-size: 1rem; font-weight: 500; transition: all 0.2s ease; box-shadow: var(--shadow-sm); }
-        input[type="text"]:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-light); }
-        button.btn-add { background-color: var(--primary); color: white; border: none; padding: 14px 24px; border-radius: 12px; cursor: pointer; font-size: 1rem; font-weight: 700; white-space: nowrap; transition: all 0.2s ease; }
-        button.btn-add:hover { background-color: var(--primary-dark); }
-
-        /* --- Task List Section --- */
-        ul { list-style-type: none; flex-grow: 1; overflow-y: auto; padding-right: 4px; }
-        ul::-webkit-scrollbar { width: 6px; }
-        ul::-webkit-scrollbar-thumb { background-color: var(--border-color); border-radius: 3px; }
-        li { display: flex; align-items: center; padding: 16px; background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 12px; transition: all 0.3s ease; box-shadow: var(--shadow-sm); }
-        li.completed { background-color: #ecfdf5; border-color: #a7f3d0; }
-        li.completed .task-text { text-decoration: line-through; color: var(--text-muted); opacity: 0.7; }
-        
-        .checkbox-container { position: relative; display: block; width: 24px; height: 24px; margin-right: 16px; flex-shrink: 0; cursor: pointer; }
-        .checkbox-container input { position: absolute; opacity: 0; cursor: pointer; height: 0; width: 0; }
-        .checkmark { position: absolute; top: 0; left: 0; height: 24px; width: 24px; background-color: #f1f5f9; border: 2px solid #cbd5e1; border-radius: 6px; transition: all 0.2s ease; }
-        .checkbox-container input:checked ~ .checkmark { background-color: var(--success); border-color: var(--success); box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); }
-        .checkmark:after { content: ""; position: absolute; display: none; left: 7px; top: 3px; width: 6px; height: 11px; border: solid white; border-width: 0 3px 3px 0; transform: rotate(45deg); }
-        .checkbox-container input:checked ~ .checkmark:after { display: block; }
-
-        .task-text { flex-grow: 1; font-size: 1.05rem; font-weight: 500; word-break: break-word; padding-right: 12px; line-height: 1.4; }
-        .actions { display: flex; gap: 8px; opacity: 0.6; }
-        .btn-action { background: none; border: none; cursor: pointer; font-size: 1.2rem; border-radius: 8px; width: 36px; height: 36px; display: flex; justify-content: center; align-items: center; }
-        .btn-edit { color: var(--warning); } .btn-delete { color: var(--danger); }
-        .empty-state { text-align: center; color: var(--text-muted); padding: 40px 0; font-style: italic; display: none; }
-    </style>
+    <title>📝 Daily Todo R & M</title>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <div class="app-container">
+        <nav class="main-nav">
+            <a href="index.html" class="nav-main-btn active">📝 Task</a>
+            <a href="history.html" class="nav-main-btn">📚 History</a>
+            <a href="ranking.html" class="nav-main-btn">🏆 Ranking</a>
+        </nav>
+
         <header>
-            <div class="header-top">
-                <h1>ToDo <span>R & M</span></h1>
-                <span class="status-dot" title="Live Sync Active"></span>
+            <h1>Daily Todo <span>R & M</span></h1>
+            <div class="date-picker-area">
+                <input type="date" id="calendar-input">
             </div>
-            <div class="date-display" id="current-date">...</div>
         </header>
 
-        <div class="user-tabs">
-            <button id="tab-rangga" class="tab-btn active" onclick="switchUser('rangga')">🧑🏻 Rangga</button>
-            <button id="tab-malika" class="tab-btn" onclick="switchUser('malika')">👩🏻 Malika</button>
+        <div class="ranking-box">
+            <div class="ranking-header">
+                <span>🧑🏻 RANGGA: <span id="score-rangga">0</span></span>
+                <span>🏆 LIVE RANKING <span id="current-month">MEI</span></span>
+                <span>👩🏻 MALIKA: <span id="score-malika">0</span></span>
+            </div>
+            <div class="rank-bars">
+                <div id="bar-rangga" class="bar bar-rangga" style="width: 50%"></div>
+                <div id="bar-malika" class="bar bar-malika" style="width: 50%"></div>
+            </div>
         </div>
 
-        <section class="stats-card">
-            <div class="stats-info">
-                <h2>Ringkasan Progres</h2>
-                <p id="stats-counter">Memuat data dari cloud...</p>
-            </div>
-            <div class="progress-circle" id="progress-circle">0%</div>
-        </section>
+        <div class="user-tabs">
+            <button id="tab-rangga" class="tab-btn active" onclick="window.switchUser('rangga')">🧑🏻 Rangga</button>
+            <button id="tab-malika" class="tab-btn" onclick="window.switchUser('malika')">👩🏻 Malika</button>
+        </div>
 
         <div class="input-group">
-            <input type="text" id="task-input" placeholder="Tambah target hari ini..." autocomplete="off">
-            <button id="add-btn" class="btn-add">+ Tambah</button>
+            <input type="text" id="task-input" placeholder="Tulis rencana kamu...">
+            <button onclick="window.showAddModal()" class="btn-add">+</button>
         </div>
 
         <ul id="task-list"></ul>
-        <div id="empty-state" class="empty-state">🎯 Belum ada target. Tambahkan sekarang!</div>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-        import { getDatabase, ref, push, remove, update, onValue } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
+    <div id="modal-overlay" class="modal-overlay">
+        <div class="modal">
+            <h3 id="modal-title">Konfirmasi</h3>
+            <p id="modal-desc" style="margin: 10px 0; color: #64748b;"></p>
+            <div id="modal-input-container" style="display:none; margin: 15px 0;">
+                <input type="text" id="modal-input-field" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd;">
+            </div>
+            <div class="modal-btns">
+                <button class="modal-btn btn-cancel" onclick="window.closeModal()">Batal</button>
+                <button id="modal-ok-btn" class="modal-btn btn-confirm">Ya, Lakukan</button>
+            </div>
+        </div>
+    </div>
 
-        // =========================================================
-        // PENTING: GANTI DENGAN FIREBASE CONFIG MILIKMU
-        // =========================================================
-        const firebaseConfig = {
-            apiKey: "AIzaSyCwCqo73f9R6Bxl...",
-            authDomain: "my-daily-todo-40565.firebaseapp.com",
-            projectId: "my-daily-todo-40565",
-            databaseURL: "https://my-daily-todo-40565-default-rtdb.asia-southeast1.firebasedatabase.app", 
-            storageBucket: "my-daily-todo-40565.firebasestorage.app",
-            messagingSenderId: "140272983252",
-            appId: "1:140272983252:web:d1b42ed..."
-        };
-        // =========================================================
-
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-
-        // State Management
-        let currentUser = 'rangga'; // Default yang terbuka
-        let allTasks = { rangga: [], malika: [] };
-
-        // DOM Elements
-        const taskInput = document.getElementById('task-input');
-        const addBtn = document.getElementById('add-btn');
-        const taskList = document.getElementById('task-list');
-        const currentDateDisplay = document.getElementById('current-date');
-        const emptyState = document.getElementById('empty-state');
-        const statsCounter = document.getElementById('stats-counter');
-        const progressCircle = document.getElementById('progress-circle');
-        const tabRangga = document.getElementById('tab-rangga');
-        const tabMalika = document.getElementById('tab-malika');
-
-        // Setup Tanggal
-        const today = new Date();
-        const dateStringForDisplay = today.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-        const dateKeyForDatabase = `${today.getDate()}-${today.getMonth() + 1}-${today.getFullYear()}`;
-        currentDateDisplay.textContent = dateStringForDisplay;
-
-        // Referensi database untuk SELURUH HARI INI
-        const todayTasksRef = ref(db, 'tasks/' + dateKeyForDatabase);
-
-        // Fungsi Ganti User (Tab)
-        window.switchUser = function(user) {
-            currentUser = user;
-            
-            // Ubah gaya tombol tab
-            if(user === 'rangga') {
-                tabRangga.classList.add('active');
-                tabMalika.classList.remove('active');
-                taskInput.placeholder = "Tambah target untuk Rangga...";
-            } else {
-                tabMalika.classList.add('active');
-                tabRangga.classList.remove('active');
-                taskInput.placeholder = "Tambah target untuk Malika...";
-            }
-            
-            // Render ulang layarnya
-            renderTasks();
-        }
-
-        // 1. REAL-TIME LISTENER (Membaca data dari Cloud)
-        onValue(todayTasksRef, (snapshot) => {
-            // Kosongkan sementara
-            allTasks = { rangga: [], malika: [] };
-            const data = snapshot.val();
-            
-            if (data) {
-                // Masukkan data Rangga
-                if (data.rangga) {
-                    for (let id in data.rangga) allTasks.rangga.push({ id: id, ...data.rangga[id] });
-                    allTasks.rangga.reverse();
-                }
-                // Masukkan data Malika
-                if (data.malika) {
-                    for (let id in data.malika) allTasks.malika.push({ id: id, ...data.malika[id] });
-                    allTasks.malika.reverse();
-                }
-            }
-            // Tampilkan list sesuai user yang sedang aktif
-            renderTasks();
-        });
-
-        // 2. Tambah Task (Ditambahkan ke kamar currentUser)
-        function addTask() {
-            const text = taskInput.value.trim();
-            if (text !== '') {
-                // Perhatikan path-nya: tasks/tanggal/nama_user
-                push(ref(db, `tasks/${dateKeyForDatabase}/${currentUser}`), {
-                    text: text,
-                    completed: false,
-                    timestamp: Date.now()
-                });
-                taskInput.value = '';
-                taskInput.focus();
-            }
-        }
-
-        // 3. Hapus Task
-        window.deleteTask = function(id) {
-            remove(ref(db, `tasks/${dateKeyForDatabase}/${currentUser}/${id}`));
-        }
-
-        // 4. Edit Task
-        window.editTask = function(id, oldText) {
-            const newText = prompt("Edit task:", oldText);
-            if (newText !== null && newText.trim() !== '') {
-                update(ref(db, `tasks/${dateKeyForDatabase}/${currentUser}/${id}`), {
-                    text: newText.trim()
-                });
-            }
-        }
-
-        // 5. Toggle Status
-        window.toggleStatus = function(id, currentStatus) {
-            update(ref(db, `tasks/${dateKeyForDatabase}/${currentUser}/${id}`), {
-                completed: !currentStatus
-            });
-        }
-
-        // --- Render UI ---
-        function updateStats(tasksForActiveUser) {
-            const total = tasksForActiveUser.length;
-            const completed = tasksForActiveUser.filter(task => task.completed).length;
-
-            if (total === 0) {
-                statsCounter.textContent = `Belum ada target untuk ${currentUser.charAt(0).toUpperCase() + currentUser.slice(1)}.`;
-                progressCircle.textContent = "0%";
-                progressCircle.style.background = `conic-gradient(#e2e8f0 0%, #e2e8f0 100%)`;
-                return;
-            }
-
-            const percentage = Math.round((completed / total) * 100);
-            
-            if (total === completed) {
-                statsCounter.textContent = `Semua target ${currentUser.charAt(0).toUpperCase() + currentUser.slice(1)} tuntas! 🎉`;
-            } else {
-                statsCounter.textContent = `${completed} dari ${total} task selesai`;
-            }
-
-            progressCircle.textContent = `${percentage}%`;
-            const fillingPercentage = (percentage === 0) ? 0.01 : percentage;
-            progressCircle.style.background = `radial-gradient(closest-side, white 79%, transparent 80% 100%), conic-gradient(var(--success) ${percentage}%, #e2e8f0 0%)`;
-        }
-
-        function renderTasks() {
-            taskList.innerHTML = '';
-            
-            // Ambil array list sesuai user yang lagi dipilih
-            const currentTasks = allTasks[currentUser];
-            updateStats(currentTasks);
-            
-            if (currentTasks.length === 0) {
-                emptyState.style.display = 'block';
-            } else {
-                emptyState.style.display = 'none';
-                
-                currentTasks.forEach(task => {
-                    const li = document.createElement('li');
-                    if (task.completed) li.classList.add('completed');
-                    
-                    li.innerHTML = `
-                        <label class="checkbox-container">
-                            <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleStatus('${task.id}', ${task.completed})">
-                            <span class="checkmark"></span>
-                        </label>
-                        <span class="task-text">${task.text}</span>
-                        <div class="actions">
-                            <button class="btn-action btn-edit" onclick="editTask('${task.id}', '${task.text.replace(/'/g, "\\'")}')" title="Edit">✎</button>
-                            <button class="btn-action btn-delete" onclick="deleteTask('${task.id}')" title="Hapus">✖</button>
-                        </div>
-                    `;
-                    taskList.appendChild(li);
-                });
-            }
-        }
-
-        // Event Listeners
-        addBtn.addEventListener('click', addTask);
-        taskInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') addTask();
-        });
-
-    </script>
+    <script type="module" src="script.js"></script>
 </body>
 </html>
